@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { check } = require('express-validator');
+const { check, query } = require('express-validator');
 
 const dependencies = require('./routesDependencies');
 
@@ -161,6 +161,65 @@ router.post(
       .withMessage('The organization length must be less than 255 digits!')
   ],
   dependencies.controllers.authClient.register
+);
+
+/**
+ * @swagger
+ * /users:
+ *  get:
+ *    tags:
+ *      - Others
+ *    name: User Listing API
+ *    summary: This api provides the List of users.
+ *    consumes:
+ *      - application/json
+ *    produces:
+ *      - application/json
+ *    parameters:
+ *      - name: Param Data
+ *        in: param
+ *        schema:
+ *          type: object
+ *          properties:
+ *            search:
+ *              type: string
+ *            sort:
+ *              type: string
+ *            order:
+ *              type: string
+ *        required:
+ *         - search
+ *         - sort
+ *         - order
+ *    responses:
+ *      200:
+ *        description: User List.
+ *      404:
+ *        description: No users found.
+ *      422:
+ *        description: Input validation error messages.
+ *      500:
+ *        description: Internal server error.
+ */
+router.get(
+  '/users',
+  [
+    query('search')
+      .matches(/^[A-Za-z0-9]+$/)
+      .withMessage('The search field must be alphabetic or alphanumeric, and it should not contain spaces!')
+      .isLength({ max: 255 })
+      .withMessage('The organization length must be less than 255 digits!')
+      .optional({ nullable: true }),
+    query('sort')
+      .isIn(['firstName', 'lastName', 'email', 'employeeId', 'organization'])
+      .withMessage('The sort must contain a valid column name!')
+      .optional({ nullable: true }),
+    query('order')
+      .isIn([-1, 1])
+      .withMessage('The order must contain any from -1 and 1!')
+      .optional({ nullable: true })
+  ],
+  dependencies.controllers.others.getUsers
 );
 
 module.exports = router;

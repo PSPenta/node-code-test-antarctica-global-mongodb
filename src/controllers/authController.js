@@ -1,10 +1,10 @@
-/* eslint-disable no-undef */
+/* eslint-disable no-underscore-dangle */
 const { compare, hash } = require('bcrypt');
 const { validationResult } = require('express-validator');
 const { sign } = require('jsonwebtoken');
-const { generate: uniqueEmployeeID } = require('shortid');
+const { model } = require('mongoose');
+const { v4: uuidv4 } = require('uuid');
 
-const { model } = require('../config/dbConfig');
 const { jwt } = require('../config/serverConfig');
 const { responseMsg } = require('../helpers/utils');
 
@@ -15,13 +15,13 @@ exports.jwtLogin = async (req, res) => {
       return res.status(422).json(responseMsg(errors.array()));
     }
 
-    const userData = await model('User').findAll({ where: { email: req.body.email } });
+    const userData = await model('user').findOne({ email: req.body.email });
     let token = '';
-    if (userData.length && await compare(req.body.password, userData[0].password)) {
+    if (userData && await compare(req.body.password, userData.password)) {
       token = sign(
         {
-          username: userData[0].username,
-          userId: userData[0].id.toString()
+          email: userData.email,
+          userId: userData._id.toString()
         },
         jwt.secret,
         { expiresIn: jwt.expireIn }
@@ -42,7 +42,7 @@ exports.jwtLogout = async (req, res) => {
     if (req.headers.authorization) {
       const token = req.headers.authorization.split(' ')[1];
       if (token) {
-        await model('Blacklist').create({
+        await model('blacklist').create({
           token,
           user: req.userId
         });
@@ -63,10 +63,10 @@ exports.register = async (req, res) => {
       return res.status(422).json(responseMsg(errors.array()));
     }
 
-    const data = await model('User').findAll({ where: { email: req.body.email } });
-    if (!data || !data[0]) {
+    const data = await model('user').findOne({ email: req.body.email });
+    if (!data) {
       const hashedPassword = await hash(req.body.password, 256);
-      const user = await model('User').create({
+      const user = await model('user').create({
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         email: req.body.email,
@@ -74,11 +74,13 @@ exports.register = async (req, res) => {
       });
 
       if (user) {
-        await model('Employee').create({
-          employeeId: uniqueEmployeeID(),
+        const employee = await model('employee').create({
+          employeeId: uuidv4(),
           organization: req.body.organization,
-          user_id: user.id
+          user: user._id
         });
+        user.employee = employee._id;
+        user.save();
         return res.status(201).json(responseMsg(null, true, { message: 'User added successfully!' }));
       }
       return res.status(404).json(responseMsg('Something went wrong!'));

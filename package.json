@@ -25,10 +25,12 @@
     "express-validator": "^6.11.1",
     "helmet": "^4.6.0",
     "jsonwebtoken": "^8.5.1",
+    "mongoose": "^5.12.10",
+    "mongoose-aggregate-paginate-v2": "^1.0.42",
     "morgan": "^1.10.0",
-    "shortid": "^2.2.16",
     "swagger-jsdoc": "^6.1.0",
     "swagger-ui-express": "^4.1.6",
+    "uuid": "^8.3.2",
     "xss-clean": "^0.1.1"
   },
   "devDependencies": {
